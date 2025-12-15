@@ -1,0 +1,14 @@
+# Configuración de finales de línea para Git
+# Los archivos .sh (bash scripts) SIEMPRE deben usar LF (Unix)
+*.sh text eol=lf
+
+# Archivos de texto generales
+*.ts text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+
+# Archivos de PowerShell usan CRLF (Windows)
+*.ps1 text eol=crlf
