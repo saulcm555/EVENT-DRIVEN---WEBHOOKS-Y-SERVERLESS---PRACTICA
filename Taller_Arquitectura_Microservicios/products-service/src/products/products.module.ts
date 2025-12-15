@@ -13,11 +13,14 @@ import { Product } from './entities/product.entity';
         name: 'ORDERS_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://localhost:5672'],
+          urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
           queue: 'orders_queue',
           queueOptions: {
             durable: true,
           },
+          // Publicar eventos al exchange, no directamente a la cola
+          exchange: process.env.RABBITMQ_EXCHANGE || 'microservices.events',
+          exchangeType: 'topic',
         },
       },
     ]),

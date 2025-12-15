@@ -45,12 +45,10 @@ services:
       - PORT=3001
       - RABBITMQ_URL=amqp://rabbitmq:5672
       - RABBITMQ_QUEUE=products_queue
+      - RABBITMQ_EXCHANGE=microservices.events
     depends_on:
       rabbitmq:
         condition: service_healthy
-    volumes:
-      - ./products-service:/app
-      - /app/node_modules
     networks:
       - microservices-network
     restart: unless-stopped
@@ -66,6 +64,7 @@ services:
       - PORT=3002
       - RABBITMQ_URL=amqp://rabbitmq:5672
       - RABBITMQ_QUEUE=orders_queue
+      - RABBITMQ_EXCHANGE=microservices.events
       - REDIS_HOST=redis
       - REDIS_PORT=6379
     depends_on:
@@ -73,9 +72,6 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-    volumes:
-      - ./orders-service:/app
-      - /app/node_modules
     networks:
       - microservices-network
     restart: unless-stopped
@@ -94,9 +90,38 @@ services:
     depends_on:
       - orders-service
       - products-service
-    volumes:
-      - ./api-gateway:/app
-      - /app/node_modules
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  webhook-publisher:
+    build:
+      context: ./webhook-publisher-service
+      dockerfile: Dockerfile
+    container_name: webhook-publisher-service
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - RABBITMQ_QUEUE=webhook_publisher_queue
+      - RABBITMQ_EXCHANGE=microservices.events
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WEBHOOK_SECRET=dev_secret_key_123456
+      # Supabase config para leer suscriptores dinámicos
+      - SUPABASE_URL=https://zjynrmbugltvupttaxqz.supabase.co
+      - SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY:-}
+      # Cache TTL en milisegundos (default 45 segundos)
+      - SUBSCRIBERS_CACHE_TTL_MS=45000
+      # Fallback URLs si Supabase falla
+      - WEBHOOK_LOGGER_URL=https://zjynrmbugltvupttaxqz.supabase.co/functions/v1/webhook-logger
+      - TELEGRAM_NOTIFIER_URL=https://zjynrmbugltvupttaxqz.supabase.co/functions/v1/telegram-notifier
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - microservices-network
     restart: unless-stopped

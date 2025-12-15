@@ -13,11 +13,25 @@ import { Order } from './entities/order.entity';
         name: 'PRODUCTS_SERVICE',
         transport: Transport.RMQ,
         options: {
-          urls: ['amqp://localhost:5672'],
+          urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
           queue: 'products_queue',
           queueOptions: {
-            durable: false,
+            durable: true,
           },
+        },
+      },
+      {
+        name: 'EVENTS_SERVICE',
+        transport: Transport.RMQ,
+        options: {
+          urls: [process.env.RABBITMQ_URL || 'amqp://localhost:5672'],
+          queue: 'orders_queue',
+          queueOptions: {
+            durable: true,
+          },
+          // Publicar al exchange para que todos los consumidores reciban los eventos
+          exchange: process.env.RABBITMQ_EXCHANGE || 'microservices.events',
+          exchangeType: 'topic',
         },
       },
     ]),

@@ -14,6 +14,7 @@ export class OrdersService {
     @InjectRepository(Order)
     private orderRepository: Repository<Order>,
     @Inject('PRODUCTS_SERVICE') private productsClient: ClientProxy,
+    @Inject('EVENTS_SERVICE') private eventsClient: ClientProxy,
     private redisService: RedisService,
   ) {}
 
@@ -85,6 +86,27 @@ export class OrdersService {
       }
 
       await this.orderRepository.save(order);
+
+      // Emitir eventos de dominio según el resultado
+      const eventPayload = {
+        orderId: order.id,
+        status: order.status,
+        productId: data.productId,
+        quantity: data.quantity,
+        idempotencyKey: data.idempotencyKey,
+        timestamp: new Date().toISOString(),
+      };
+
+      if (data.approved) {
+        this.logger.log(`📤 Emitting event: order.confirmed for order ${order.id}`);
+        this.eventsClient.emit('order.confirmed', eventPayload);
+      } else {
+        this.logger.log(`📤 Emitting event: order.cancelled for order ${order.id}`);
+        this.eventsClient.emit('order.cancelled', {
+          ...eventPayload,
+          reason: data.reason || 'STOCK_NOT_AVAILABLE',
+        });
+      }
 
       // Marcar mensaje como procesado (TTL 24 horas)
       await this.redisService.set(cacheKey, 'true', 86400);

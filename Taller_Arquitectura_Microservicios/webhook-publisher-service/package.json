@@ -1,5 +1,5 @@
 {
-  "name": "orders-service",
+  "name": "webhook-publisher-service",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -20,22 +20,19 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs/bullmq": "^11.0.4",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/microservices": "^11.1.9",
     "@nestjs/platform-express": "^11.0.1",
-    "@nestjs/typeorm": "^11.0.0",
     "amqp-connection-manager": "^5.0.0",
     "amqplib": "^0.10.9",
-    "class-transformer": "^0.5.1",
-    "class-validator": "^0.14.3",
+    "axios": "^1.13.2",
+    "bullmq": "^5.66.0",
     "ioredis": "^5.8.2",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1",
-    "sqlite3": "^5.1.7",
-    "typeorm": "^0.3.28",
-    "uuid": "^9.0.1"
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -43,11 +40,11 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/schematics": "^11.0.0",
     "@nestjs/testing": "^11.0.1",
+    "@types/amqplib": "^0.10.8",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
     "@types/supertest": "^6.0.2",
-    "@types/uuid": "^10.0.0",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
