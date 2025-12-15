@@ -1,0 +1,109 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: microservices_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - microservices-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: microservices_redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - microservices-network
+
+  products-service:
+    build:
+      context: ./products-service
+      dockerfile: Dockerfile
+    container_name: products-service
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - RABBITMQ_QUEUE=products_queue
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    volumes:
+      - ./products-service:/app
+      - /app/node_modules
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  orders-service:
+    build:
+      context: ./orders-service
+      dockerfile: Dockerfile
+    container_name: orders-service
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - RABBITMQ_URL=amqp://rabbitmq:5672
+      - RABBITMQ_QUEUE=orders_queue
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./orders-service:/app
+      - /app/node_modules
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - ORDERS_QUEUE=orders_queue
+    depends_on:
+      - orders-service
+      - products-service
+    volumes:
+      - ./api-gateway:/app
+      - /app/node_modules
+    networks:
+      - microservices-network
+    restart: unless-stopped
+
+networks:
+  microservices-network:
+    driver: bridge
+
+volumes:
+  redis-data:
